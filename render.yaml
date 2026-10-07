@@ -1,0 +1,11 @@
+# Render Blueprint: builds the app and serves dist/ as a static site.
+services:
+  - type: web
+    name: rubik-ll-trainer
+    runtime: static
+    # devDependencies hold the build tools (TypeScript, Vite), so they must be installed too.
+    buildCommand: npm ci --include=dev && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: 22.17.1
