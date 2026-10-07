@@ -10,6 +10,38 @@ const PAGES: { id: Page; href: string; label: string }[] = [
   { id: 'timer', href: '#/timer', label: 'Timer' },
 ];
 
+// The "LL" of the name as two little cube faces, each with its lit stickers forming an L.
+const STICKER = 8;
+const PITCH = STICKER + 1.4;
+const INSET = 2.6;
+const FACE = 2 * INSET + 2 * PITCH + STICKER;
+const FACE_STARTS = [0, FACE + 4.5];
+const CELLS = [0, 1, 2];
+const inLetter = (column: number, row: number) => column === 0 || row === 2;
+
+const Monogram = () => (
+  <svg className="monogram" viewBox={`0 0 ${FACE_STARTS[1] + FACE} ${FACE}`} aria-hidden="true">
+    {FACE_STARTS.map((start) => (
+      <g key={start}>
+        <rect className="face" x={start} width={FACE} height={FACE} rx={5.5} />
+        {CELLS.flatMap((row) =>
+          CELLS.map((column) => (
+            <rect
+              key={`${column}-${row}`}
+              className={inLetter(column, row) ? 'lit' : undefined}
+              x={start + INSET + column * PITCH}
+              y={INSET + row * PITCH}
+              width={STICKER}
+              height={STICKER}
+              rx={2.2}
+            />
+          )),
+        )}
+      </g>
+    ))}
+  </svg>
+);
+
 // The page lives in the URL's hash, so it can be linked to and the back button works, while the
 // site stays a single file that any static host can serve.
 const pageOf = (hash: string): Page => (hash.startsWith('#/timer') ? 'timer' : 'finder');
@@ -36,10 +68,12 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">
-          <h1>LL Trainer</h1>
-          <p>Tìm công thức tầng 3 thuận tay nhất, bấm giờ và xem lời giải gợi ý</p>
-        </div>
+        <h1 className="brand">
+          <a className="wordmark" href="#/" aria-label="LL Trainer — về trang Công thức">
+            <Monogram />
+            <span aria-hidden="true">Trainer</span>
+          </a>
+        </h1>
         <nav className="nav" aria-label="Trang">
           {PAGES.map(({ id, href, label }) => (
             <a key={id} href={href} aria-current={page === id ? 'page' : undefined}>

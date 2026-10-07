@@ -417,8 +417,9 @@
 
 .cfop {
   display: grid;
+  /* One column that cannot be pushed wider than the card by what is in it. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-  min-width: 0;
 }
 
 .cfop-options {
@@ -517,6 +518,16 @@
   .cfop-compare .badge {
     padding-inline: 6px;
     font-size: 12px;
+  }
+}
+
+/* Narrower still: a colour's name and its badge may stack rather than widen the table. */
+@container card (max-width: 330px) {
+  .cfop th button {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    padding-block: 4px;
+    white-space: normal;
   }
 }
 

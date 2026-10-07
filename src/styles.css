@@ -186,15 +186,41 @@ h3 {
   margin-bottom: 18px;
 }
 
-.brand h1 {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+.brand {
+  font-size: 27px;
+  line-height: 1;
 }
 
-.brand p {
-  color: var(--muted);
-  font-size: 14px;
+/* The name: "LL" as two last-layer faces whose lit stickers each form an L, then the rest in type. */
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38em;
+  padding: 2px;
+  border-radius: 10px;
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+
+.monogram {
+  width: auto;
+  height: 1.2em;
+  fill: #3a435b;
+}
+
+.monogram .face {
+  fill: #05070c;
+}
+
+.monogram .lit {
+  fill: #ffd60a;
+  transition: fill var(--base) var(--ease);
+}
+
+.wordmark:hover .lit {
+  fill: #ffe566;
 }
 
 /* Something hidden stays hidden, whatever display its class asks for. */
@@ -219,7 +245,7 @@ h3 {
 .nav a {
   display: grid;
   place-items: center;
-  min-height: 40px;
+  min-height: var(--tap);
   padding: 0 18px;
   border: 1px solid transparent;
   border-radius: 10px;
@@ -853,6 +879,13 @@ ul.howto {
   gap: 8px;
 }
 
+/* These carry whole phrases, which must be free to wrap on a narrow screen. */
+.actions .btn {
+  padding-block: 6px;
+  text-align: left;
+  white-space: normal;
+}
+
 .remaining {
   display: flex;
   flex-wrap: wrap;
@@ -1197,6 +1230,13 @@ ul.howto {
   }
 }
 
+/* On the narrowest phones the two faces alone stand for the name. */
+@media (max-width: 350px) {
+  .wordmark span {
+    display: none;
+  }
+}
+
 @media (max-width: 520px) {
   .app {
     padding: 14px 12px 56px;
@@ -1206,8 +1246,18 @@ ul.howto {
     margin: 0 -12px;
   }
 
-  .brand p {
-    display: none;
+  /* The name and the page switch share one row, so the cube below keeps its room. */
+  .topbar {
+    gap: 10px;
+  }
+
+  .brand {
+    font-size: 21px;
+  }
+
+  .nav a {
+    padding: 0 10px;
+    font-size: 15px;
   }
 
 
