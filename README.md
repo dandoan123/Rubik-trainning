@@ -15,11 +15,15 @@ npm test         # kiểm chứng toàn bộ công thức và logic
 npm run build    # bản production trong dist/
 ```
 
-## Deploy lên Render
+## Deploy
 
-Repo có sẵn `render.yaml` (static site, build bằng `npm run build`, phục vụ thư mục `dist/`). Trên
-[Render](https://dashboard.render.com): **New → Blueprint**, chọn repo này rồi **Apply**. Sau đó mỗi lần push
-lên nhánh `main` Render tự build và deploy lại.
+App là static site: build ra thư mục `dist/` với đường dẫn tương đối, nên chạy được cả ở gốc tên miền lẫn
+trong thư mục con. Mỗi lần push lên nhánh `main` là tự deploy lại.
+
+- **GitHub Pages**: workflow `.github/workflows/pages.yml` chạy test, build rồi publish. Bật một lần trong
+  **Settings → Pages → Source: GitHub Actions**. Trang nằm ở `https://<tài-khoản>.github.io/<tên-repo>/`.
+- **Render**: `render.yaml` khai báo sẵn static site. Trên [Render](https://dashboard.render.com) chọn
+  **New → Blueprint**, chọn repo này rồi **Apply**.
 
 ## Cách hoạt động
 
