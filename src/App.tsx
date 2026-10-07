@@ -386,7 +386,7 @@ export default function App() {
                 ' — mặt nào hướng về bạn cũng được.'
               )}
             </p>
-            <div className="input-body">
+            <div className={`input-body ${set}`}>
               <figure className="diagram-box">
                 <LLDiagram
                   state={caseState}

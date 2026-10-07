@@ -413,8 +413,11 @@ h3 {
 
 /* ----- Cards ----- */
 
+/* The card's own width, not the screen's, decides how its contents are laid out: the same card is
+   wide on a tablet and narrow in the side column of a small laptop. */
 .card {
   padding: 16px 18px 18px;
+  container: card / inline-size;
 }
 
 .card > header {
@@ -429,6 +432,20 @@ h3 {
   flex: 1;
   font-size: 18px;
   font-weight: 650;
+}
+
+/* In a narrow card the header buttons drop their text, so the title keeps its line. They keep
+   their aria-label. */
+@container card (max-width: 469px) {
+  .card > header .label {
+    display: none;
+  }
+
+  .card > header .btn {
+    width: var(--tap);
+    min-height: var(--tap);
+    padding: 0;
+  }
 }
 
 .step-no {
@@ -456,9 +473,35 @@ h3 {
 
 .input-body {
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   align-items: start;
+}
+
+.diagram-box {
+  width: min(210px, 100%);
+  margin: 0 auto;
+}
+
+/* Stacked, the PLL colour buttons come first: they are what gets pressed, the diagram only shows
+   the result. */
+.input-body.pll .howto {
+  order: -1;
+}
+
+@container card (min-width: 470px) {
+  .input-body {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+
+  .diagram-box {
+    width: auto;
+    margin: 0;
+  }
+
+  .input-body.pll .howto {
+    order: 0;
+  }
 }
 
 .diagram-box figcaption {
@@ -471,6 +514,7 @@ h3 {
 .howto {
   margin: 0;
   font-size: 15px;
+  container: howto / inline-size;
 }
 
 ul.howto {
@@ -499,9 +543,14 @@ ul.howto {
 .swatch {
   position: relative;
   display: grid;
+  /* The column may shrink below its content, so a long colour name wraps instead of pushing the
+     colour block out of the button. */
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
   justify-items: center;
   gap: 4px;
-  padding: 6px 4px 6px;
+  min-width: 0;
+  padding: 6px 4px;
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -521,7 +570,9 @@ ul.howto {
 .swatch-name {
   font-size: 12px;
   line-height: 1.2;
-  white-space: nowrap;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .swatch kbd {
@@ -545,6 +596,36 @@ ul.howto {
 
 .swatch:active:not(:disabled) {
   transform: scale(0.95);
+}
+
+/* Too narrow for four across with readable names: two rows of two, colour beside its name. */
+@container howto (max-width: 400px) {
+  .palette {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .swatch {
+    grid-template-columns: 36px minmax(0, 1fr);
+    align-items: center;
+    justify-items: start;
+    gap: 8px;
+    min-height: 48px;
+    padding: 5px 6px 5px 5px;
+  }
+
+  .swatch-colour {
+    height: 36px;
+  }
+
+  .swatch-name {
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .swatch kbd {
+    top: 8px;
+    left: 8px;
+  }
 }
 
 /* A colour that cannot be on this sticker: faded and struck through, not just dimmed. */
@@ -993,6 +1074,11 @@ ul.howto {
     min-height: var(--tap);
   }
 
+  /* No keyboard here, so the number-key hints would only cover the colours. */
+  .swatch kbd {
+    display: none;
+  }
+
   html {
     /* Keeps keyboard focus from hiding under the pinned cube. */
     scroll-padding-top: 52vh;
@@ -1066,16 +1152,6 @@ ul.howto {
     display: none;
   }
 
-  /* Icon-only on a phone, so the card title keeps its line. The buttons keep their aria-label. */
-  .card > header .label {
-    display: none;
-  }
-
-  .card > header .btn {
-    width: var(--tap);
-    min-height: var(--tap);
-    padding: 0;
-  }
 
   .tabs {
     width: 100%;
@@ -1086,14 +1162,6 @@ ul.howto {
     min-width: 0;
   }
 
-  .input-body {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .diagram-box {
-    width: min(210px, 100%);
-    margin: 0 auto;
-  }
 }
 
 /* Turns of the cube stay animated — they are the content — but everything decorative stops. */
