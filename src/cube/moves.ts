@@ -75,7 +75,34 @@ export const U_TURNS: readonly Move[][] = [
   [{ base: 'U', amount: 3 }],
 ];
 
-export const formatMove =({ base, amount }: Move): string => base + (amount === 2 ? '2' : amount === 3 ? "'" : '');
+/** Merges consecutive turns of the same face (or rotations about the same axis) and drops those that cancel. */
+export function simplify(moves: readonly Move[]): Move[] {
+  const out: Move[] = [];
+  for (const move of moves) {
+    const last = out.at(-1);
+    if (last?.base !== move.base) {
+      out.push(move);
+      continue;
+    }
+    out.pop();
+    const amount = (last.amount + move.amount) % 4;
+    if (amount) out.push({ base: move.base, amount: amount as Move['amount'] });
+  }
+  return out;
+}
+
+const SIDES = ['F', 'R', 'B', 'L'];
+/**
+ * Face turns as they read after the whole cube has been turned `quarters` times like U: what was
+ * a turn of the front face is now a turn of the right face, and so on round.
+ */
+export const turnedAround = (moves: readonly Move[], quarters: number): Move[] =>
+  moves.map((move) => {
+    const side = SIDES.indexOf(move.base);
+    return side < 0 ? move : { ...move, base: SIDES[(side + quarters) % 4] };
+  });
+
+export const formatMove = ({ base, amount }: Move): string => base + (amount === 2 ? '2' : amount === 3 ? "'" : '');
 
 const TOKEN = /([RLUDFBMESxyzrludfb])(w?)(2'|2|')?/y;
 

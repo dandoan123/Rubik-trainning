@@ -1,0 +1,544 @@
+.timer {
+  /* Chart series, in fixed order. Checked together for colour-blind separation and for contrast
+     against the card surface. */
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  /* The stackmat convention: red while the hold is too short, green once letting go will start. */
+  --hold: #f87171;
+  --go: #4ade80;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.timer-main,
+.timer-side {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.timer .card h2 {
+  font-size: 17px;
+}
+
+/* ----- Shared small controls ----- */
+
+.segmented {
+  display: inline-flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.segmented button {
+  min-width: 52px;
+  min-height: calc(var(--tap) - 8px);
+  padding: 0 12px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  font-weight: 600;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+.segmented button:hover {
+  color: var(--text);
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--accent);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.btn.danger {
+  border-color: var(--hold);
+  color: var(--text);
+}
+
+.warn-text {
+  margin-top: 8px;
+}
+
+/* ----- Scramble ----- */
+
+.scramble-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+}
+
+.scramble-bar .btn {
+  margin-left: auto;
+}
+
+.scramble-text {
+  margin-bottom: 6px;
+  font-family: var(--mono);
+  font-size: clamp(18px, 2.3vw, 24px);
+  font-weight: 500;
+  line-height: 1.5;
+  word-spacing: 0.2em;
+  overflow-wrap: anywhere;
+}
+
+.chooser {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.chooser summary {
+  display: inline-block;
+  padding: 6px 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+.chooser .gallery-group h3 {
+  margin-top: 12px;
+}
+
+/* ----- The pad: the whole block is the start / stop button ----- */
+
+.pad {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  min-height: clamp(220px, 38vh, 380px);
+  padding: 24px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  cursor: pointer;
+  /* A long press must arm the timer, not select text or open a menu; a vertical drag still scrolls. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: pan-y;
+}
+
+.clock {
+  font-family: var(--mono);
+  font-size: clamp(64px, 15vw, 150px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.prompt {
+  max-width: 36ch;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.pad.holding .clock {
+  color: var(--hold);
+}
+
+.pad.ready .clock {
+  color: var(--go);
+}
+
+/* While a solve runs nothing else is on screen, and a touch anywhere stops it. */
+.pad.running {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  min-height: 0;
+  background: var(--bg);
+  border: 0;
+  border-radius: 0;
+  touch-action: none;
+}
+
+.last-solve {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+}
+
+.solve-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ----- Tables ----- */
+
+.stat-table,
+.case-table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-table :is(th, td),
+.case-table :is(th, td) {
+  padding: 7px 4px;
+  border-top: 1px solid var(--line);
+  text-align: right;
+}
+
+.stat-table thead :is(th, td),
+.case-table thead th {
+  border-top: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.stat-table tbody th,
+.case-table :is(thead, tbody) th:first-child {
+  text-align: left;
+}
+
+.stat-table tbody th {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-weight: 500;
+}
+
+.stat-table td {
+  font-family: var(--mono);
+}
+
+.case-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--tap);
+  padding: 0;
+  background: none;
+  border: 0;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+.case-link .ll-diagram {
+  flex: none;
+  width: 36px;
+}
+
+/* ----- Solve list ----- */
+
+.solve-head,
+.solve-row {
+  display: grid;
+  grid-template-columns: 40px 1.3fr 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.solve-head {
+  padding-bottom: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.solve-head span:first-child,
+.solve-row span:first-child {
+  color: var(--muted);
+  text-align: left;
+}
+
+.solves {
+  max-height: 420px;
+  margin: 0 0 10px;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.solve-row {
+  width: 100%;
+  min-height: var(--tap);
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 15px;
+  transition: background var(--fast) var(--ease);
+}
+
+.solve-row:hover,
+.solve-row[aria-expanded='true'] {
+  background: var(--surface-2);
+}
+
+.solve-row span {
+  color: var(--muted);
+}
+
+.solve-detail {
+  display: grid;
+  gap: 8px;
+  padding: 10px 8px 14px;
+  background: var(--surface-2);
+}
+
+.scramble-small {
+  font-family: var(--mono);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.cube-net {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  margin: 0 auto;
+}
+
+/* ----- Trend chart ----- */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0 0 8px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 14px;
+  list-style: none;
+}
+
+.legend b,
+.trend-tip b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.line-key {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  margin-right: 6px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.trend-frame {
+  position: relative;
+  border-radius: 8px;
+  touch-action: pan-y;
+}
+
+.trend-frame svg {
+  display: block;
+}
+
+.trend .grid {
+  stroke: var(--line);
+}
+
+.trend .tick {
+  fill: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.trend .series {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The ring in the surface colour keeps a marker readable where it sits on another line. */
+.trend .marker {
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.trend .crosshair {
+  stroke: var(--muted);
+}
+
+.trend-tip {
+  position: absolute;
+  top: 4px;
+  display: grid;
+  gap: 2px;
+  min-width: 132px;
+  padding: 8px 10px;
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+/* ----- Suggested solution ----- */
+
+.cfop {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cfop-compare,
+.cfop-stages {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cfop :is(th, td) {
+  padding: 5px 6px;
+  border-top: 1px solid var(--line);
+  text-align: right;
+}
+
+.cfop thead th {
+  border-top: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cfop :is(th, td):first-child {
+  text-align: left;
+}
+
+.cfop th button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: calc(var(--tap) - 6px);
+  padding: 0 2px;
+  background: none;
+  border: 0;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.cfop th button:hover {
+  color: var(--accent);
+}
+
+/* In a narrow card the comparison keeps what decides the choice: cross length, total and effort. */
+@container card (max-width: 520px) {
+  .cfop .detail {
+    display: none;
+  }
+
+  .cfop :is(th, td) {
+    padding-inline: 4px;
+  }
+
+  .cfop-compare .badge {
+    padding-inline: 6px;
+    font-size: 12px;
+  }
+}
+
+/* The row in view is marked by a bar as well as a tint, not by colour alone. */
+.cfop tr.chosen {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.cfop-stages .moves {
+  font-family: var(--mono);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.cfop tfoot :is(th, td) {
+  border-top: 1px solid var(--line-strong);
+}
+
+.swatch-dot {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  border: 1px solid rgb(255 255 255 / 0.4);
+  border-radius: 4px;
+  vertical-align: -2px;
+}
+
+.cfop-hold b {
+  font-weight: 600;
+}
+
+.cfop-stage {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.cfop-stage .cube-host {
+  height: clamp(240px, 40vh, 380px);
+}
+
+.cfop-stage .player {
+  background: var(--surface);
+}
+
+.cfop-caption {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  padding: 2px 10px;
+  background: rgb(19 26 43 / 0.78);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+@media (max-width: 920px) {
+  .timer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

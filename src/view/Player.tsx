@@ -6,6 +6,8 @@ export interface SequenceMove {
   move: Move;
   /** Setup turn before the algorithm, the algorithm itself, or the final alignment turn. */
   kind: 'pre' | 'alg' | 'post';
+  /** Names the part of a longer solution that starts with this move. */
+  label?: string;
 }
 
 interface Props {
@@ -89,8 +91,9 @@ export function Player({ sequence, step, playing, speed, onToggle, onTurn, onJum
         <p className="hint">Nhập trường hợp của bạn để xem công thức chạy trên cube.</p>
       ) : (
         <ol className="sequence" ref={strip}>
-          {sequence.map(({ move, kind }, i) => (
+          {sequence.map(({ move, kind, label }, i) => (
             <li key={i}>
+              {label && <span className="chip-label">{label}</span>}
               <button
                 className={['chip', kind, i < step && 'done', i === step && 'next'].filter(Boolean).join(' ')}
                 aria-current={i === step ? 'step' : undefined}

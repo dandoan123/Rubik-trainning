@@ -1,10 +1,11 @@
 # LL Trainer
 
-Web app giúp người học Rubik 3x3 tìm công thức tầng 3 (OLL và PLL) nhanh nhất, thuận tay nhất cho đúng
-trường hợp đang có trên tay: nhập trường hợp trên cube 3D, nhận danh sách công thức đã xếp hạng theo độ dễ
-thực hiện (finger trick), rồi xem công thức chạy từng bước.
+Web app cho người học Rubik 3x3, gồm hai trang:
 
-Quy ước cầm cube: vàng ở trên, trắng ở dưới; với PLL thì tâm xanh lá hướng về người giải.
+- **Công thức**: nhập trường hợp tầng 3 (OLL, PLL) đang có trên tay bằng cube 3D, nhận danh sách công thức
+  đã xếp hạng theo độ dễ thực hiện (finger trick), rồi xem công thức chạy từng bước. Quy ước cầm cube: vàng
+  ở trên, trắng ở dưới; với PLL thì tâm xanh lá hướng về người giải.
+- **Timer** (`#/timer`): bấm giờ kiểu csTimer, kèm lời giải gợi ý theo CFOP cho từng đề.
 
 ## Chạy
 
@@ -43,6 +44,31 @@ trí cổ tay hai bàn tay, tính phí regrip khi cổ tay hết biên độ, v�
 cầm hiện tại. Đây là mô hình ước lượng, không phải số đo: công thức "phổ biến nhất" luôn được đánh dấu riêng
 để người học tự so sánh.
 
+## Timer
+
+- **Bấm giờ**: giữ phím cách (hoặc giữ ngón tay trên vùng đồng hồ) 0,3 giây rồi thả để bắt đầu; bấm phím
+  bất kỳ hoặc chạm để dừng; Esc huỷ lần đang chạy. Tuỳ chọn 15 giây quan sát, quá giờ thì +2 rồi DNF.
+- **Đề**: 3×3 đầy đủ (25 move ngẫu nhiên, cầm trắng trên – xanh lá trước), và đề luyện riêng PLL / OLL dựng
+  từ cơ sở dữ liệu công thức, chọn được những trường hợp muốn luyện.
+- **Phiên luyện**: mỗi loại đề có danh sách riêng, lưu trong `localStorage` của trình duyệt (không đồng bộ
+  giữa các máy), phạt +2 / DNF, xuất CSV.
+- **Thống kê**: single, mo3, ao5, ao12, ao50, ao100 (hiện tại và tốt nhất), biểu đồ xu hướng, và với đề
+  PLL / OLL là thời gian theo từng trường hợp — bấm vào trường hợp chậm để mở công thức của nó.
+
+### Lời giải gợi ý (CFOP)
+
+Với mỗi đề, `src/cfop` tính một lời giải CFOP cho **cả sáu màu cross** rồi xếp hạng, và phát lời giải đó
+từng bước trên cube 3D:
+
+1. **Cross** — ngắn nhất có thể. Một bảng khoảng cách cho toàn bộ trạng thái của bốn cạnh cross cho ra mọi
+   lời giải ngắn nhất ở cả 24 cách cầm cube; cái thuận tay nhất được chọn.
+2. **F2L** — mỗi cặp được chèn bằng cách chèn ngắn nhất (tìm kiếm IDA*, không xoay mặt dưới, giữ nguyên
+   cross và các cặp đã xong), cặp dễ nhất làm trước, có xét việc xoay cả cube (`y`) cho thuận tay.
+3. **OLL, PLL** — nhận diện rồi lấy công thức tốt nhất từ cơ sở dữ liệu của trang Công thức.
+
+Cross là tối ưu thật sự; F2L tối ưu theo từng cặp chứ không phải cho cả bốn cặp cùng lúc, nên lời giải là
+một gợi ý tốt (trung bình khoảng 54 move) chứ không phải lời giải ngắn nhất tuyệt đối.
+
 ## Cấu trúc
 
 | Thư mục | Nội dung |
@@ -50,6 +76,9 @@ cầm hiện tại. Đây là mô hình ước lượng, không phải số đo:
 | `src/cube` | Mô hình cube 54 ô, bảng hoán vị các move (sinh từ hình học), đọc ký hiệu công thức |
 | `src/data` | 57 trường hợp OLL, 21 trường hợp PLL và các công thức |
 | `src/solver` | Suy luận đầu vào, tìm công thức khớp, mô hình chấm điểm finger trick |
+| `src/finder` | Trang Công thức |
+| `src/timer` | Trang Timer: sinh đề, đồng hồ, thống kê, lưu trữ, biểu đồ |
+| `src/cfop` | Bộ giải CFOP (cross, F2L, ghép lời giải) và thẻ hiển thị lời giải |
 | `src/view` | Cube 3D (three.js), sơ đồ 2D, trình phát, danh sách trường hợp |
 
 ## Thêm công thức

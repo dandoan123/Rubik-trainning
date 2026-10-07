@@ -274,7 +274,8 @@ export class Cube3D {
       this.hover = null;
     }
     this.controls.update();
-    if (!this.dirty) return;
+    // Nothing to draw into while the page holding the cube is hidden.
+    if (!this.dirty || !this.host.clientWidth) return;
     this.dirty = false;
     this.renderer.render(this.scene, this.camera);
   };

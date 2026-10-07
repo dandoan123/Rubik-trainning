@@ -78,4 +78,6 @@ export const CASES: Record<AlgSet, CaseEntry[]> = {
 
 export const GROUPS: Record<AlgSet, string[]> = { oll: OLL_GROUPS, pll: PLL_GROUPS };
 
+export const CASE_BY_ID: ReadonlyMap<string, CaseEntry> = new Map([...CASES.oll, ...CASES.pll].map((entry) => [entry.id, entry]));
+
 export const caseTitle = (entry: CaseEntry) => (entry.nickname ? `${entry.id} · ${entry.nickname}` : entry.id);
