@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState, type FormEvent, type MouseEvent } from 'react';
 import { CfopCard } from '../cfop/CfopCard';
 import { CASES, CASE_BY_ID, caseTitle, type AlgSet, type CaseEntry } from '../data/cases';
 import { CaseGallery } from '../view/CaseGallery';
@@ -176,7 +176,16 @@ export function TimerView({ active, onOpenCase }: Props) {
   // After a mouse or touch press on a control, hand the keyboard back to the timer: otherwise
   // the next Space would press that control again instead of starting a solve.
   const releaseFocus = (event: MouseEvent) => {
-    if (event.detail > 0 && document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    const focused = document.activeElement;
+    if (event.detail === 0 || !(focused instanceof HTMLElement)) return;
+    // A drop-down list closes the moment it loses focus, so it keeps it until a choice is made.
+    if (focused instanceof HTMLSelectElement) return;
+    focused.blur();
+  };
+  /** The list a pointer opened. One reached by keyboard keeps its focus, so tabbing can go on from it. */
+  const openedList = useRef<EventTarget | null>(null);
+  const releaseList = (event: FormEvent) => {
+    if (event.target === openedList.current) (event.target as HTMLSelectElement).blur();
   };
 
   const stats = useMemo(() => {
@@ -200,7 +209,12 @@ export function TimerView({ active, onOpenCase }: Props) {
   };
 
   return (
-    <main className="timer" onClickCapture={releaseFocus}>
+    <main
+      className="timer"
+      onClickCapture={releaseFocus}
+      onPointerDownCapture={(event) => (openedList.current = event.target instanceof HTMLSelectElement ? event.target : null)}
+      onChangeCapture={releaseList}
+    >
       <div className="timer-main">
         <section className="card scramble-card">
           <div className="scramble-bar">
