@@ -27,7 +27,15 @@ export const subOf = (seconds: number) => Math.floor(seconds) + 1;
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
 /** An estimate is only good to a tenth of a second, and to a second past the minute. */
-export const formatEstimate = (seconds: number) => (seconds < 60 ? seconds.toFixed(1) : clock(Math.round(seconds)));
+const shown = (seconds: number) => (seconds < 59.95 ? Math.round(seconds * 10) / 10 : Math.round(seconds));
 
-/** "sub-20", or "sub-1:05" past the minute. */
-export const subLabel = (seconds: number) => `sub-${seconds < 59 ? subOf(seconds) : clock(subOf(seconds))}`;
+export const formatEstimate = (seconds: number) => (shown(seconds) < 60 ? shown(seconds).toFixed(1) : clock(shown(seconds)));
+
+/**
+ * "sub-20", or "sub-1:05" past the minute. It goes by the time as displayed, so that 8.96 seconds,
+ * shown as 9.0, reads sub-10 rather than a contradictory sub-9.
+ */
+export function subLabel(seconds: number) {
+  const sub = subOf(shown(seconds));
+  return `sub-${sub < 60 ? sub : clock(sub)}`;
+}

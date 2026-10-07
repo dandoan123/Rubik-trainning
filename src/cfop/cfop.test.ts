@@ -4,7 +4,7 @@ import { SOLVED, recolorToHome } from '../cube/state';
 import { makeScramble, type Random } from '../timer/scramble';
 import { crossLength, crossOf, crossSolutions } from './cross';
 import { slotSolved } from './f2l';
-import { PACES, paceOf, secondsFor, subOf, typicalSeconds } from './pace';
+import { PACES, formatEstimate, paceOf, secondsFor, subLabel, subOf, typicalSeconds } from './pace';
 import { movesOf, solveEach } from './solve';
 import { TURNS } from './tracker';
 
@@ -125,5 +125,13 @@ describe('time estimate', () => {
     expect(paceOf(35000)).toBeCloseTo(2);
     expect(typicalSeconds(2)).toBe(35);
     expect(PACES).toEqual([...PACES].sort((a, b) => a - b));
+  });
+
+  it('labels the sub by the time as displayed', () => {
+    expect([formatEstimate(19.64), subLabel(19.64)]).toEqual(['19.6', 'sub-20']);
+    // 8.96 is shown as 9.0, so calling it sub-9 would look wrong beside it.
+    expect([formatEstimate(8.96), subLabel(8.96)]).toEqual(['9.0', 'sub-10']);
+    expect([formatEstimate(59.97), subLabel(59.97)]).toEqual(['1:00', 'sub-1:01']);
+    expect([formatEstimate(72.4), subLabel(72.4)]).toEqual(['1:12', 'sub-1:13']);
   });
 });
