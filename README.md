@@ -69,6 +69,16 @@ từng bước trên cube 3D:
 Cross là tối ưu thật sự; F2L tối ưu theo từng cặp chứ không phải cho cả bốn cặp cùng lúc, nên lời giải là
 một gợi ý tốt (trung bình khoảng 54 move) chứ không phải lời giải ngắn nhất tuyệt đối.
 
+Hai tuỳ chọn:
+
+- **Không xoay cả khối khi giải**: sau khi đã cầm cube vào tư thế, lời giải không dùng `x`, `y`, `z` nữa.
+  F2L chèn thẳng vào khe phía sau bằng mặt B và L; công thức OLL / PLL có phép xoay được viết lại trên các
+  mặt khác (`withoutRotations` trong `src/cube/moves.ts`). Số move gần như không đổi.
+- **Thời gian ước tính**: mỗi lời giải có một số nhịp (xem mục Xếp hạng); thời gian = số nhịp ÷ tốc độ tay.
+  Tốc độ tay chọn theo mức người giải (trung bình khoảng 70, 47, 35, 23, 18, 12 hoặc 9 giây) hoặc lấy từ
+  trung bình 12 lần giải 3×3 gần nhất của chính người dùng, với giả định một lần giải CFOP thông thường tốn
+  khoảng 70 nhịp. Kết quả hiện kèm mốc "sub" tương ứng.
+
 ## Cấu trúc
 
 | Thư mục | Nội dung |

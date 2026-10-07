@@ -10,6 +10,10 @@ export interface TimerData {
   inspection: boolean;
   /** Show the suggested solution next to the scramble. */
   showSolution: boolean;
+  /** Suggest solutions that never turn the whole cube once the solve has started. */
+  noRotations: boolean;
+  /** Pace, in beats per second, to estimate solution times for; null uses the solver's own pace. */
+  pace: number | null;
   /** Solves of each scramble type, oldest first. */
   sessions: Record<ScrambleType, Solve[]>;
   /** Cases to practise in each set; null means all of them. */
@@ -22,6 +26,8 @@ const fresh = (): TimerData => ({
   type: '333',
   inspection: false,
   showSolution: true,
+  noRotations: false,
+  pace: null,
   sessions: { '333': [], oll: [], pll: [] },
   chosen: { oll: null, pll: null },
 });
@@ -39,6 +45,8 @@ export function loadTimerData(): TimerData {
     if (saved.type && saved.type in data.sessions) data.type = saved.type;
     data.inspection = saved.inspection === true;
     data.showSolution = saved.showSolution !== false;
+    data.noRotations = saved.noRotations === true;
+    if (typeof saved.pace === 'number' && saved.pace > 0) data.pace = saved.pace;
     for (const type of Object.keys(data.sessions) as ScrambleType[]) {
       const list = saved.sessions?.[type];
       if (Array.isArray(list)) data.sessions[type] = list.filter(isSolve);

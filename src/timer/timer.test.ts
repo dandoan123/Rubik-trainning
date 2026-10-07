@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { D, F, FACELETS } from '../cube/geometry';
-import { MOVE_DEFS, applyMoves, parseAlg, simplify, type Move } from '../cube/moves';
+import { MOVE_DEFS, applyMoves, formatMove, parseAlg, simplify, withoutRotations, type Move } from '../cube/moves';
 import { ROTATIONS, SOLVED, centerOf, isTopOriented, ollOrientations, ollState, type CubeState } from '../cube/state';
 import { CASES } from '../data/cases';
 import { findSolutions } from '../solver/solve';
@@ -50,6 +50,22 @@ describe('scrambles', () => {
       const rewritten = toFaceTurns(original);
       expect(onlyFaceTurns(rewritten), text).toBe(true);
       expect(applyMoves(SOLVED, rewritten), text).toEqual(settled(applyMoves(SOLVED, original)));
+    }
+  });
+
+  it('drops whole-cube rotations by renaming the moves after them', () => {
+    const text = (alg: string) => withoutRotations(parseAlg(alg)).map(formatMove).join(' ');
+    // The A perm written with a rotation is the well-known one without it.
+    expect(text("x R' U R' D2 R U' R' D2 R2 x'")).toBe("R' F R' B2 R F' R' B2 R2");
+    expect(text("y R U R' y' F")).toBe("B U B' F");
+    // Upside down, the right-hand layers are the cube's left-hand ones, and M' runs the way M did.
+    expect(text("z2 U r M'")).toBe('D l M');
+    for (const entry of [...CASES.oll, ...CASES.pll]) {
+      for (const alg of entry.algs) {
+        const rewritten = withoutRotations(alg.moves);
+        expect(rewritten.some((move) => 'xyz'.includes(move.base)), alg.text).toBe(false);
+        expect(settled(applyMoves(SOLVED, rewritten)), alg.text).toEqual(settled(applyMoves(SOLVED, alg.moves)));
+      }
     }
   });
 

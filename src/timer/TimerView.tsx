@@ -6,7 +6,7 @@ import { Icon } from '../view/Icon';
 import { LLDiagram } from '../view/LLDiagram';
 import { CubeNet } from './CubeNet';
 import { makeScramble, type ScrambleType } from './scramble';
-import { byCase, formatSolve, formatTime, resultOf, rolling, summarize, type Penalty, type Solve } from './stats';
+import { byCase, formatSolve, formatTime, recentAverage, resultOf, rolling, summarize, type Penalty, type Solve } from './stats';
 import { loadTimerData, saveTimerData, toCsv, type TimerData } from './store';
 import { TrendChart } from './TrendChart';
 import { INSPECTION_MS, useStopwatch, type Result, type Stopwatch } from './useStopwatch';
@@ -184,6 +184,8 @@ export function TimerView({ active, onOpenCase }: Props) {
     return { summary: summarize(solves), ao5: rolling(times, 5, 'average'), ao12: rolling(times, 12, 'average'), cases: byCase(solves) };
   }, [solves]);
 
+  // The solver's pace comes from full solves, whichever kind of scramble is showing.
+  const ownAverage = useMemo(() => recentAverage(data.sessions['333']), [data.sessions]);
   const last = solves.at(-1);
   const rows = solves.map((solve, index) => ({ solve, index })).reverse();
   const shown = showAll ? rows : rows.slice(0, PAGE);
@@ -276,7 +278,17 @@ export function TimerView({ active, onOpenCase }: Props) {
             </button>
           </header>
           {data.showSolution ? (
-            <CfopCard key={scramble.text} state={scramble.state} compare={type === '333'} paused={!active || watch.phase !== 'idle'} />
+            <CfopCard
+              key={`${scramble.text} ${data.noRotations}`}
+              state={scramble.state}
+              compare={type === '333'}
+              paused={!active || watch.phase !== 'idle'}
+              rotations={!data.noRotations}
+              onRotations={(allowed) => change({ noRotations: !allowed })}
+              pace={data.pace}
+              onPace={(pace) => change({ pace })}
+              ownAverage={ownAverage}
+            />
           ) : (
             <p className="hint">Lời giải đang ẩn để bạn tự giải trước. Bấm nút ở trên khi muốn xem.</p>
           )}

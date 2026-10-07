@@ -2,26 +2,30 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { applyMove, formatMove } from '../cube/moves';
 import type { CubeState } from '../cube/state';
 import { CASE_BY_ID, caseTitle } from '../data/cases';
+import { formatTime } from '../timer/stats';
 import { COLORS, COLOR_NAMES } from '../view/colors';
 import { CubeView, type CubeViewHandle } from '../view/CubeView';
 import { Player, type SequenceMove } from '../view/Player';
 import { usePlayback } from '../view/usePlayback';
+import { PACES, formatEstimate, paceOf, secondsFor, subLabel, typicalSeconds } from './pace';
 import { solveEach, type CfopSolution, type Stage } from './solve';
 
 const NO_FACELETS: ReadonlySet<number> = new Set();
 const ignore = () => {};
+/** Pace assumed until the solver's own is known or one is chosen: someone averaging about 35 seconds. */
+const DEFAULT_PACE = 2;
 
 /** Works through the six solutions a little at a time, so the page (and the clock) stay responsive. */
-function useSolutions(state: CubeState, paused: boolean, limit: number) {
+function useSolutions(state: CubeState, rotations: boolean, paused: boolean, limit: number) {
   const [solutions, setSolutions] = useState<CfopSolution[]>([]);
   const [finished, setFinished] = useState(false);
   const steps = useRef<Generator<CfopSolution> | null>(null);
 
   useEffect(() => {
-    steps.current = solveEach(state);
+    steps.current = solveEach(state, { rotations });
     setSolutions([]);
     setFinished(false);
-  }, [state]);
+  }, [state, rotations]);
 
   useEffect(() => {
     if (paused || finished) return;
@@ -39,7 +43,7 @@ function useSolutions(state: CubeState, paused: boolean, limit: number) {
       if (solutions.length + 1 >= limit) setFinished(true);
     }, 30);
     return () => window.clearTimeout(timer);
-  }, [state, paused, finished, solutions.length, limit]);
+  }, [state, rotations, paused, finished, solutions.length, limit]);
 
   return { solutions, finished };
 }
@@ -69,11 +73,19 @@ interface Props {
   compare: boolean;
   /** True while the timer is busy: computing waits and playback stops. */
   paused: boolean;
+  /** Whether the suggestion may turn the whole cube once the solve has started. */
+  rotations: boolean;
+  onRotations: (allowed: boolean) => void;
+  /** Pace to estimate times for, in beats per second; null follows the solver's own pace. */
+  pace: number | null;
+  onPace: (pace: number | null) => void;
+  /** What the solver currently averages on full solves, in milliseconds; null while unknown. */
+  ownAverage: number | null;
 }
 
-/** A suggested CFOP solution for the scramble, played on a 3D cube, with its move statistics. */
-export function CfopCard({ state, compare, paused }: Props) {
-  const { solutions, finished } = useSolutions(state, paused, compare ? 6 : 1);
+/** A suggested CFOP solution for the scramble, played on a 3D cube, with its statistics. */
+export function CfopCard({ state, compare, paused, rotations, onRotations, pace, onPace, ownAverage }: Props) {
+  const { solutions, finished } = useSolutions(state, rotations, paused, compare ? 6 : 1);
   const [picked, setPicked] = useState<number | null>(null);
   const view = useRef<CubeViewHandle>(null);
 
@@ -102,14 +114,61 @@ export function CfopCard({ state, compare, paused }: Props) {
     if (paused) pause();
   }, [paused, pause]);
 
-  if (!solution) return <p className="hint">{finished ? 'Không tìm được lời giải cho đề này.' : 'Đang tính lời giải…'}</p>;
+  const ownPace = ownAverage === null ? null : paceOf(ownAverage);
+  const rate = pace ?? ownPace ?? DEFAULT_PACE;
+  const seconds = (effort: number) => secondsFor(effort, rate);
+
+  const options = (
+    <div className="cfop-options">
+      <label className="check">
+        <input type="checkbox" checked={!rotations} onChange={(event) => onRotations(!event.target.checked)} />
+        <span>Không xoay cả khối khi giải</span>
+      </label>
+      <label className="pace">
+        <span>Ước tính thời gian cho</span>
+        <select
+          value={pace ?? (ownPace === null ? DEFAULT_PACE : 'own')}
+          onChange={(event) => onPace(event.target.value === 'own' ? null : Number(event.target.value))}
+        >
+          <option value="own" disabled={ownAverage === null}>
+            {ownAverage === null ? 'tốc độ của bạn (cần 5 lần giải 3×3)' : `tốc độ của bạn (trung bình ${formatTime(ownAverage)})`}
+          </option>
+          {PACES.map((option) => (
+            <option key={option} value={option}>
+              người giải khoảng {typicalSeconds(option)} giây
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+
+  if (!solution) {
+    return (
+      <div className="cfop">
+        {options}
+        <p className="hint">{finished ? 'Không tìm được lời giải cho đề này.' : 'Đang tính lời giải…'}</p>
+      </div>
+    );
+  }
 
   // Which stage the playback is in, and where each stage starts.
   const starts = solution.stages.map((_, s) => solution.stages.slice(0, s).reduce((sum, stage) => sum + stage.moves.length, 0));
   const current = starts.findLastIndex((start, s) => start <= playback.at && solution.stages[s].moves.length > 0);
+  const estimate = seconds(solution.cost);
 
   return (
     <div className="cfop">
+      {options}
+
+      <p className="cfop-estimate">
+        Ước tính <b>{formatEstimate(estimate)} giây</b>
+        <span className="badge strong">{subLabel(estimate)}</span>
+        <span className="hint">
+          {solution.turns} move, {rotations ? `${solution.rotations} lần xoay cả khối` : 'không xoay cả khối'}
+        </span>
+      </p>
+
       {compare && (
         <>
           <p className="hint">
@@ -127,7 +186,10 @@ export function CfopCard({ state, compare, paused }: Props) {
                   OLL+PLL
                 </th>
                 <th scope="col">Tổng</th>
-                <th scope="col">Nhịp</th>
+                <th scope="col" className="detail">
+                  Nhịp
+                </th>
+                <th scope="col">Giây</th>
               </tr>
             </thead>
             <tbody>
@@ -152,7 +214,8 @@ export function CfopCard({ state, compare, paused }: Props) {
                   <td>
                     <b>{item.turns}</b>
                   </td>
-                  <td>{item.cost.toFixed(1)}</td>
+                  <td className="detail">{item.cost.toFixed(1)}</td>
+                  <td>{formatEstimate(seconds(item.cost))}</td>
                 </tr>
               ))}
             </tbody>
@@ -161,7 +224,7 @@ export function CfopCard({ state, compare, paused }: Props) {
       )}
 
       <p className="cfop-hold">
-        Cầm cube: <Swatch colour={solution.cross} />
+        Trước khi bắt đầu, cầm cube: <Swatch colour={solution.cross} />
         <b>{COLOR_NAMES[solution.cross]}</b> ở dưới, <Swatch colour={solution.front} />
         <b>{COLOR_NAMES[solution.front]}</b> hướng về bạn.
       </p>
@@ -197,12 +260,17 @@ export function CfopCard({ state, compare, paused }: Props) {
             <th scope="col">Bước</th>
             <th scope="col">Các move</th>
             <th scope="col">Move</th>
-            <th scope="col">Nhịp</th>
+            <th scope="col" className="detail">
+              Nhịp
+            </th>
+            <th scope="col">Giây</th>
           </tr>
         </thead>
         <tbody>
-          {solution.stages.map((stage, s) =>
-            stage.moves.length === 0 ? null : (
+          {solution.stages.map((stage, s) => {
+            if (stage.moves.length === 0) return null;
+            const counted = stage.kind !== 'hold';
+            return (
               <tr key={s} className={s === current && playback.at < sequence.length ? 'chosen' : undefined}>
                 <th scope="row">
                   <button onClick={() => playback.jump(starts[s])} title="Xem từ bước này">
@@ -210,25 +278,42 @@ export function CfopCard({ state, compare, paused }: Props) {
                   </button>
                 </th>
                 <td className="moves">{stage.moves.map(formatMove).join(' ')}</td>
-                <td>{stage.kind === 'hold' ? '–' : stage.metrics.turns}</td>
-                <td>{stage.kind === 'hold' ? '–' : stage.metrics.cost.toFixed(1)}</td>
+                <td>{counted ? stage.metrics.turns : '–'}</td>
+                <td className="detail">{counted ? stage.metrics.cost.toFixed(1) : '–'}</td>
+                <td>{counted ? formatEstimate(seconds(stage.metrics.cost)) : '–'}</td>
               </tr>
-            ),
-          )}
+            );
+          })}
         </tbody>
         <tfoot>
           <tr>
             <th scope="row">Tổng</th>
-            <td className="hint">{solution.rotations ? `${solution.rotations} lần xoay cả cube khi giải` : 'không xoay cube khi giải'}</td>
+            <td />
             <td>
               <b>{solution.turns}</b>
             </td>
-            <td>
+            <td className="detail">
               <b>{solution.cost.toFixed(1)}</b>
+            </td>
+            <td>
+              <b>{formatEstimate(estimate)}</b>
             </td>
           </tr>
         </tfoot>
       </table>
+
+      <details className="explain">
+        <summary>Thời gian được ước tính thế nào</summary>
+        <p>
+          Mỗi lời giải có một số <b>nhịp</b>: một cú flick R hoặc U là 1 nhịp, move khó hơn và mỗi lần xoay cả khối tính nhiều hơn.
+          Thời gian ước tính = số nhịp ÷ tốc độ tay của người giải, tính cả khoảng dừng nhận diện ở mức bình thường của người đó.
+        </p>
+        <p>
+          Tốc độ của một người được suy từ thời gian trung bình của họ, với giả định một lần giải CFOP thông thường tốn khoảng 70
+          nhịp. Tốc độ của bạn lấy từ trung bình 12 lần giải 3×3 gần nhất trong Timer. Đây là thời gian nếu thực hiện đúng lời giải
+          này, không phải dự đoán cho lần giải tự do.
+        </p>
+      </details>
     </div>
   );
 }

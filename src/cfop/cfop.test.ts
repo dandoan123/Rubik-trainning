@@ -4,6 +4,7 @@ import { SOLVED, recolorToHome } from '../cube/state';
 import { makeScramble, type Random } from '../timer/scramble';
 import { crossLength, crossOf, crossSolutions } from './cross';
 import { slotSolved } from './f2l';
+import { PACES, paceOf, secondsFor, subOf, typicalSeconds } from './pace';
 import { movesOf, solveEach } from './solve';
 import { TURNS } from './tracker';
 
@@ -84,4 +85,45 @@ describe('full CFOP solutions', () => {
         `${(elapsed / samples).toFixed(0)} ms per scramble (all six colours), slowest ${slowest.toFixed(0)} ms`,
     );
   }, 120_000);
+
+  it('can be told never to turn the whole cube during the solve', () => {
+    const random = seeded(13);
+    const totals = { free: { turns: 0, cost: 0, rotations: 0 }, fixed: { turns: 0, cost: 0, rotations: 0 } };
+    const samples = 20;
+    for (let i = 0; i < samples; i++) {
+      const scramble = makeScramble('333', null, random);
+      for (const [mode, rotations] of [['free', true], ['fixed', false]] as const) {
+        for (const solution of solveEach(scramble.state, { rotations })) {
+          expect(recolorToHome(applyMoves(scramble.state, movesOf(solution))), scramble.text).toEqual(SOLVED);
+          if (!rotations) {
+            // Only the first stage, which puts the cube in position, may turn it.
+            const turning = solution.stages.slice(1).flatMap((stage) => stage.moves).filter((move) => 'xyz'.includes(move.base));
+            expect(turning.map(formatMove), scramble.text).toEqual([]);
+            expect(solution.rotations).toBe(0);
+          }
+          totals[mode].turns += solution.turns;
+          totals[mode].cost += solution.cost;
+          totals[mode].rotations += solution.rotations;
+        }
+      }
+    }
+    const per = (value: number) => (value / (samples * 6)).toFixed(1);
+    console.log(
+      `CFOP with rotations: ${per(totals.free.turns)} turns, ${per(totals.free.rotations)} rotations, effort ${per(totals.free.cost)} | ` +
+        `without: ${per(totals.fixed.turns)} turns, effort ${per(totals.fixed.cost)}`,
+    );
+    expect(totals.free.rotations).toBeGreaterThan(0);
+  }, 120_000);
+});
+
+describe('time estimate', () => {
+  it('turns effort and pace into a time and its sub', () => {
+    expect(secondsFor(60, 3)).toBe(20);
+    expect(subOf(19.6)).toBe(20);
+    expect(subOf(20)).toBe(21);
+    // Someone averaging 35 seconds turns at 2 beats a second, and the reverse.
+    expect(paceOf(35000)).toBeCloseTo(2);
+    expect(typicalSeconds(2)).toBe(35);
+    expect(PACES).toEqual([...PACES].sort((a, b) => a - b));
+  });
 });

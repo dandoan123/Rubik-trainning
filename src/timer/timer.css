@@ -421,6 +421,47 @@
   min-width: 0;
 }
 
+.cfop-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+}
+
+.pace {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 100%;
+  font-size: 14px;
+}
+
+.pace select {
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--tap);
+  padding: 0 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+}
+
+.cfop-estimate {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.cfop-estimate b {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
 .cfop-compare,
 .cfop-stages {
   width: 100%;

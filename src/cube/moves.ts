@@ -1,4 +1,4 @@
-import { FACELETS, faceletAt, rotateVec, type Axis, type Dir } from './geometry';
+import { FACELETS, faceletAt, rotateVec, type Axis, type Dir, type Vec3 } from './geometry';
 
 export interface MoveDef {
   axis: Axis;
@@ -87,6 +87,49 @@ export function simplify(moves: readonly Move[]): Move[] {
     out.pop();
     const amount = (last.amount + move.amount) % 4;
     if (amount) out.push({ base: move.base, amount: amount as Move['amount'] });
+  }
+  return out;
+}
+
+const UNITS: readonly Vec3[] = [
+  [1, 0, 0],
+  [0, 1, 0],
+  [0, 0, 1],
+];
+const TURN_BY_LAYERS = new Map(
+  Object.entries(MOVE_DEFS)
+    .filter(([, { slices }]) => slices.length < 3)
+    .map(([base, { axis, slices }]) => [`${axis}:${[...slices].sort((a, b) => a - b)}`, base]),
+);
+
+/**
+ * The same sequence without ever turning the whole cube: each x, y or z is dropped and the moves
+ * after it are renamed to the layers they would have turned. The cube ends up the same, only not
+ * rotated. Wide and slice turns stay wide and slice turns.
+ */
+export function withoutRotations(moves: readonly Move[]): Move[] {
+  // held[i]: the direction, on the cube as first held, that now lies along the solver's axis i.
+  let held: Vec3[] = [...UNITS];
+  const out: Move[] = [];
+  for (const move of moves) {
+    const { axis, slices, dir } = MOVE_DEFS[move.base];
+    if (slices.length === 3) {
+      for (let quarter = 0; quarter < move.amount; quarter++) {
+        const before = held;
+        held = UNITS.map((unit) => {
+          const from = rotateVec(unit, axis, -dir as Dir);
+          const i = from.findIndex((value) => value !== 0);
+          return before[i].map((value) => value * from[i] + 0) as unknown as Vec3;
+        });
+      }
+      continue;
+    }
+    const along = held[axis];
+    const actual = along.findIndex((value) => value !== 0);
+    const sign = along[actual];
+    const base = TURN_BY_LAYERS.get(`${actual}:${slices.map((layer) => layer * sign).sort((a, b) => a - b)}`)!;
+    const sameWay = MOVE_DEFS[base].dir === dir * sign;
+    out.push({ base, amount: sameWay ? move.amount : ((4 - move.amount) as Move['amount']) });
   }
   return out;
 }

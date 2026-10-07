@@ -104,6 +104,15 @@ export function byCase(solves: readonly Solve[]): CaseStat[] {
   return stats.sort((a, b) => (b.mean ?? DNF) - (a.mean ?? DNF));
 }
 
+/**
+ * What the solver currently averages: the mean of the last `window` finished solves, in
+ * milliseconds. Null until there are `least` of them, since fewer say little about a pace.
+ */
+export function recentAverage(solves: readonly Solve[], window = 12, least = 5): number | null {
+  const finished = solves.map(resultOf).filter((time) => time !== DNF).slice(-window);
+  return finished.length < least ? null : mean(finished);
+}
+
 /** "12.34", "1:02.34" or "DNF". Times are cut to hundredths, as on a competition display. */
 export function formatTime(ms: number | null): string {
   if (ms === null) return '–';

@@ -4,8 +4,8 @@
 // shortest insertion, easiest pair first, turning the cube beforehand when that makes the insertion
 // more comfortable. The last layer is solved with the app's own OLL and PLL algorithms.
 
-import { D, F } from '../cube/geometry';
-import { U_TURNS, applyMoves, simplify, turnedAround, type Move } from '../cube/moves';
+import { D, F, U } from '../cube/geometry';
+import { U_TURNS, applyMoves, simplify, turnedAround, withoutRotations, type Move } from '../cube/moves';
 import {
   ROTATIONS,
   centerOf,
@@ -43,6 +43,8 @@ export interface CfopSolution {
   cost: number;
 }
 
+const TOP = centerOf(U);
+
 /** Whole-cube turns about the vertical axis, by number of quarter turns. */
 const Y: readonly Move[][] = [[], [{ base: 'y', amount: 1 }], [{ base: 'y', amount: 2 }], [{ base: 'y', amount: 3 }]];
 
@@ -79,8 +81,16 @@ function crossStarts(scrambled: CubeState): Start[] {
   return [...best.values()].sort((a, b) => a.solution.metrics.turns - b.solution.metrics.turns || a.solution.metrics.cost - b.solution.metrics.cost);
 }
 
+export interface SolveOptions {
+  /**
+   * Whether the whole cube may be turned (x, y, z) during the solve. Either way it may be turned
+   * into position before starting.
+   */
+  rotations: boolean;
+}
+
 /** The easiest pair to insert next, or null when all four are in. */
-function nextPair(state: CubeState): Stage | null {
+function nextPair(state: CubeState, { rotations }: SolveOptions): Stage | null {
   let best: Stage | null = null;
   for (let slot = 0; slot < 4; slot++) {
     if (slotSolved(state, slot)) continue;
@@ -89,8 +99,9 @@ function nextPair(state: CubeState): Stage | null {
     const kept = [1, 2, 3].filter((other) => slotSolved(seen, other));
     for (const turns of insertFrontRight(seen, kept)) {
       const insertion = turns.map((turn) => TURNS[turn]);
-      // ... then pick how far to really turn the cube: all the way, part of the way, or not at all.
-      for (let turned = 0; turned < 4; turned++) {
+      // ... then pick how far to really turn the cube: all the way, part of the way, or not at all
+      // (reaching into a back slot with the back and left faces instead).
+      for (let turned = 0; turned < (rotations ? 4 : 1); turned++) {
         const candidate = stage('f2l', [...Y[turned], ...turnedAround(insertion, (slot - turned + 4) % 4)]);
         if (!best || easier(candidate.metrics, best.metrics)) best = candidate;
       }
@@ -99,31 +110,41 @@ function nextPair(state: CubeState): Stage | null {
   return best;
 }
 
-function lastLayer(state: CubeState): Stage[] {
+/** The most comfortable known algorithm for the case on top, with the top-layer turns around it. */
+function bestAlgorithm(kind: 'oll' | 'pll', input: CubeState, { rotations }: SolveOptions): Stage {
+  const candidates = findSolutions(input, kind)
+    .map(({ entry, alg, pre, post }) => {
+      const written = [...U_TURNS[pre], ...alg.moves, ...U_TURNS[post]];
+      // An algorithm written with a rotation can be done without it, on other faces. The turns
+      // after the rotation, the final alignment included, are renamed along with it.
+      return stage(kind, rotations ? written : withoutRotations(written), entry.id);
+    })
+    // Without its rotation, an algorithm that leans on one to undo a wide turn leaves the cube
+    // tipped over. That is harmless at the very end, but not with a step still to come.
+    .filter(({ moves }) => kind === 'pll' || applyMoves(input, moves)[TOP] === input[TOP]);
+  return candidates.reduce((best, candidate) => (easier(candidate.metrics, best.metrics) ? candidate : best));
+}
+
+function lastLayer(state: CubeState, options: SolveOptions): Stage[] {
   const stages: Stage[] = [];
   if (!isTopOriented(state)) {
-    const [best] = findSolutions(ollState(ollOrientations(state)), 'oll');
-    stages.push(stage('oll', [...U_TURNS[best.pre], ...best.alg.moves], best.entry.id));
+    stages.push(bestAlgorithm('oll', ollState(ollOrientations(state)), options));
     state = after(state, stages[0].moves);
   }
   const align = aufToSolve(state);
-  if (align === null) {
-    const [best] = findSolutions(state, 'pll');
-    stages.push(stage('pll', [...U_TURNS[best.pre], ...best.alg.moves, ...U_TURNS[best.post]], best.entry.id));
-  } else if (align) {
-    stages.push(stage('pll', [...U_TURNS[align]]));
-  }
+  if (align === null) stages.push(bestAlgorithm('pll', state, options));
+  else if (align) stages.push(stage('pll', [...U_TURNS[align]]));
   return stages;
 }
 
-function finish(start: Start): CfopSolution {
+function finish(start: Start, options: SolveOptions): CfopSolution {
   const stages: Stage[] = [{ kind: 'hold', moves: start.hold, metrics: { cost: 0, turns: 0, regrips: 0, rotations: 0 } }, start.solution];
   let state = after(start.state, start.solution.moves);
-  for (let pair = nextPair(state); pair; pair = nextPair(state)) {
+  for (let pair = nextPair(state, options); pair; pair = nextPair(state, options)) {
     stages.push(pair);
     state = after(state, pair.moves);
   }
-  stages.push(...lastLayer(state));
+  stages.push(...lastLayer(state, options));
   const sum = (pick: (metrics: FingerMetrics) => number) => stages.reduce((total, { metrics }) => total + pick(metrics), 0);
   return {
     cross: start.cross,
@@ -139,8 +160,8 @@ function finish(start: Start): CfopSolution {
  * Solutions for all six cross colours, one at a time, shortest cross first. `scrambled` may be held
  * any way round; the first stage of each solution says how to turn it.
  */
-export function* solveEach(scrambled: CubeState): Generator<CfopSolution> {
-  for (const start of crossStarts(scrambled)) yield finish(start);
+export function* solveEach(scrambled: CubeState, options: SolveOptions = { rotations: true }): Generator<CfopSolution> {
+  for (const start of crossStarts(scrambled)) yield finish(start, options);
 }
 
 /** Every move of a solution in order, including the turns that put the cube in position. */
